@@ -1,18 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Data.SqlClient;
 using System.IO;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using Ionic.Zip;
 
 namespace SimpleDBBackup
 {
     class Program
     {
-        /* SQL Server connecton string */
+        /* Local SQL Server connecton string */
         static string connectionString = "Server=localhost;Integrated Security=True";
 
         //Optional:connect using credentials
@@ -22,7 +18,7 @@ namespace SimpleDBBackup
         static string[] saDatabases = new string[] { "shop", "frontend", "accounting" };
 
         /* Backup directory. Please note: Files older than DeletionDays old will be deleted automatically */
-        static string backupDir = "C:\\DB Backup";
+        static string backupDir = @"C:\DB_Backups";
 
         /* Delete backups older than DeletionDays. Set this to 0 to never delete backups */
         static int DeletionDays = 10;
