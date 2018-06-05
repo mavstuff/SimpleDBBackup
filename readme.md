@@ -14,17 +14,16 @@ static string connectionString="Server=localhost;Integrated Security=True";
 Here you specify the Connection String to the database. In the simplest case, if you use a local server with the default settings, the first line is enough. If you want to connect to the server with login and password, uncomment and modify the second line.
 ```csharp
 /* Database names to backup */
-
-static string[] saDatabases = newstring[] { &quot;shop&quot;, &quot;frontend&quot;, &quot;accounting&quot; };
+static string[] saDatabases = new string[] { "shop", "frontend", "accounting" };
 ```
 This is an array with the database names on the server, for which you want to make a backup. If you need to make a backup of one database, you can do this:
 ```csharp
-static string[] saDatabases = newstring[] { &quot;shop&quot; };
+static string[] saDatabases = new string[] { "shop" };
 ```
 
 ```csharp
 /* Backup directory. Please note: Files older than DeletionDays old will be deleted automatically */
-static string backupDir = @&quot;C:\DB\_Backups&quot;;
+static string backupDir = @"C:\DB_Backups";
 ```
 
 
