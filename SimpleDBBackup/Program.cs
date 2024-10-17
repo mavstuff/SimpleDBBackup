@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Configuration;
 using System.Data.SqlClient;
 using System.IO;
+using System.Linq;
 using System.Threading;
+using FluentFTP;
 using Ionic.Zip;
 
 
@@ -10,26 +13,51 @@ namespace SimpleDBBackup
 {
     class Program
     {
-        /* Local SQL Server connecton string */
-        static string connectionString = "Server=localhost;Integrated Security=True";
+        static string connectionString;
+        static string[] saDatabases;
+        static string backupDir;
+        static int nDeletionDays=0;
+        static string UniqueId;
+        static string ftpServer;
+        static string ftpLogin;
+        static string ftpPassword;
+        static string ftpUploadDir;
 
-        //Optional:connect using credentials
-        //static string connectionString = "Server=localhost;user id=user2018;password=MYDBPASSWORD;";
+        static void ReadSettings()
+        {
+            connectionString = ConfigurationManager.AppSettings["ConnectionString"];
 
-        /* Database names to backup */
-        static string[] saDatabases = new string[] { "shop", "frontend", "accounting" };
+            string strDatabases = ConfigurationManager.AppSettings["Databases"];
+            if (!string.IsNullOrEmpty(strDatabases))
+            {
+                saDatabases = strDatabases.Split(',').Select(s => s.Trim()).ToArray();
 
-        /* Backup directory. Please note: Files older than DeletionDays old will be deleted automatically */
-        static string backupDir = @"C:\DB_Backups";
+                UniqueId = string.Join("_", saDatabases);
+            }
 
-        /* Delete backups older than DeletionDays. Set this to 0 to never delete backups */
-        static int DeletionDays = 10;
+            backupDir = ConfigurationManager.AppSettings["BackupDir"];
 
+            string strDeletionDays = ConfigurationManager.AppSettings["DeletionDays"];
+            int.TryParse(strDeletionDays, out nDeletionDays);
 
+            ftpServer = ConfigurationManager.AppSettings["FtpServer"];
+            ftpLogin = ConfigurationManager.AppSettings["FtpLogin"];
+            ftpPassword = ConfigurationManager.AppSettings["FtpPassword"];
+            ftpUploadDir = ConfigurationManager.AppSettings["FtpUploadDir"];
+        }
 
-        static Mutex mutex = new Mutex(true, "Global\\SimpleDBBackupMutex");
         static void Main(string[] args)
         {
+            ReadSettings();
+
+            if (saDatabases == null)
+            {
+                Console.WriteLine("No databases to backup!");
+                return;
+            }
+
+            Mutex mutex = new Mutex(true, $"Global\\SimpleDBBackupMutex_{UniqueId}");
+
             // allow only single instance of the app
             if (!mutex.WaitOne(TimeSpan.Zero, true))
             {
@@ -37,7 +65,7 @@ namespace SimpleDBBackup
                 return;
             }
 
-            if (DeletionDays > 0)
+            if (nDeletionDays > 0)
                 DeleteOldBackups();
 
             DateTime dtNow = DateTime.Now;
@@ -80,6 +108,11 @@ namespace SimpleDBBackup
                 Console.WriteLine(ex.ToString());
             }
 
+            if (!string.IsNullOrEmpty(ftpServer))
+            {
+                UploadToFTP();
+            }
+
             mutex.ReleaseMutex();
         }
 
@@ -92,7 +125,7 @@ namespace SimpleDBBackup
                 foreach (string file in files)
                 {
                     FileInfo fi = new FileInfo(file);
-                    if (fi.CreationTime < DateTime.Now.AddDays(-DeletionDays))
+                    if (fi.CreationTime < DateTime.Now.AddDays(-nDeletionDays))
                         fi.Delete();
                 }
             }
@@ -100,6 +133,24 @@ namespace SimpleDBBackup
             {
                 Console.WriteLine(ex.ToString());
             }
+        }
+
+        static void UploadToFTP()
+        {
+            using (FtpClient client = new FtpClient(ftpServer, ftpLogin, ftpPassword))
+            {
+                client.AutoConnect();
+
+                client.UploadDirectory(backupDir, ftpUploadDir, FtpFolderSyncMode.Mirror);
+
+                client.Disconnect();
+
+            }
+        }
+
+        static Program()
+        {
+
         }
     }
 }
