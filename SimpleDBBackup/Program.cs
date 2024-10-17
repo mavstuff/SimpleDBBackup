@@ -92,8 +92,9 @@ namespace SimpleDBBackup
 
                         using (ZipFile zip = new ZipFile())
                         {
+                            zip.UseZip64WhenSaving = Zip64Option.AsNecessary;
                             zip.CompressionLevel = Ionic.Zlib.CompressionLevel.BestCompression;
-                            zip.AddFile(backupFileNameWithExt);
+                            zip.AddFile(backupFileNameWithExt,"");
                             zip.Save(zipFileName);
                         }
                         
